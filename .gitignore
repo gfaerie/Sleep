@@ -1,2 +1,11 @@
 /target
+/*
+/.externalToolBuilders
+/*
+/.managers
+/*
 /bin
+/*
+.classpath
+.project
+.scala_dependencies
