@@ -1,13 +1,14 @@
 package se.faerie.sleep.server.state.update
 
 import scala.collection.mutable.ListBuffer
-import se.faerie.sleep.common.MapPosition
+import se.faerie.sleep.common._
 import se.faerie.sleep.server.state.GameObject
 import se.faerie.sleep.common.network.NetworkProtocol._
 import akka.actor.ActorRef
 import se.faerie.sleep.server.state.update._
 import se.faerie.sleep.server.state.GameObjectMetadata
 import se.faerie.sleep.common.ViewModes
+
 
 class PlayerUpdater(radius: Int, controller: ActorRef) extends GameStateUpdater {
 
@@ -17,8 +18,8 @@ class PlayerUpdater(radius: Int, controller: ActorRef) extends GameStateUpdater 
       val time = System.nanoTime();
       val position = context.state.getObjectPosition(player.id)
       val objects = context.state.getObjects(position.x - radius, position.y - radius, position.x + radius, position.y + radius);
-      val syncDraw = new ListBuffer[(MapPosition, Int)]();
-      val syncLights = new ListBuffer[(MapPosition, Int)]();
+      val syncDraw = new ListBuffer[(MapPosition, TileGraphics)]();
+      val syncLights = new ListBuffer[(MapPosition, TileLightSource)]();
       for (o <- objects) {
         var drawObject: GameObject = null;
         for (d <- o._2) {

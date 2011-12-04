@@ -3,8 +3,8 @@ package se.faerie.sleep.common.light
 import collection.mutable.ListBuffer;
 import collection.mutable.Set;
 import se.faerie.sleep.common._;
-import se.faerie.sleep.map._;
 import scala.math._
+import Ordering.Implicits._
 
 class LineOfSightCalculatorImpl(length: Double) extends LineOfSightCalculator with GraphicsHelper {
 

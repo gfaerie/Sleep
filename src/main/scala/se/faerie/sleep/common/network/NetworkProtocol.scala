@@ -1,7 +1,7 @@
 package se.faerie.sleep.common.network
 import java.util.concurrent.atomic.AtomicLong
 import java.nio.ByteBuffer
-import se.faerie.sleep.common.MapPosition
+import se.faerie.sleep.common._
 import java.net.SocketAddress
 import se.faerie.sleep.common.ViewModes.ViewMode
 
@@ -23,7 +23,7 @@ object NetworkProtocol {
     def this(sId: Long, message : String) = this(sId,idCounter.incrementAndGet,message,"");
     def this(sId: Long, message : String, author : String) = this(sId,idCounter.incrementAndGet,message,author);
   }
-  case class GameUpdate(sId: Long,mapId: Long,viewMode : ViewMode,  centralPosition: MapPosition, objects: Traversable[(MapPosition, Int)], lights: Traversable[(MapPosition, Int)]) extends SessionMessage(-1, sId)
+  case class GameUpdate(sId: Long,mapId: Long,viewMode : ViewMode,  centralPosition: MapPosition, objects: Traversable[(MapPosition, TileGraphics)], lights: Traversable[(MapPosition, TileLightSource)]) extends SessionMessage(-1, sId)
   case class ActionCommand(sId: Long, actionId: Long, targetPosition: MapPosition, msgId: Long = idCounter.incrementAndGet) extends SessionMessage(msgId, sId)
 
   // raw data representation

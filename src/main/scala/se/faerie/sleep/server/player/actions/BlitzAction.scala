@@ -1,6 +1,6 @@
 package se.faerie.sleep.server.player.actions
 import se.faerie.sleep.server.player.PlayerAction
-import se.faerie.sleep.common.MapPosition
+import se.faerie.sleep.common._
 import se.faerie.sleep.server.state.GameObject
 import se.faerie.sleep.server.state.update.GameStateUpdateContext
 import scala.math._
@@ -33,7 +33,7 @@ class BlitzAction extends PlayerAction with GraphicsCompressionHelper with Graph
       val ownerPos = context.state.getObjectPosition(ownerId)
       
         for (i <- 0 to 100) {
-          val tailGraphics = storeGraphics('*', 0, 0, Byte.MaxValue)
+          val tailGraphics = new TileGraphics('*', 0, 0, Byte.MaxValue)
           val tail = new GameObject
 
           val randAngle = random.nextDouble * 2*Pi

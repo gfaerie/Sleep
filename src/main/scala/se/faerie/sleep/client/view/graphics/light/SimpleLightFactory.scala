@@ -1,21 +1,20 @@
 package se.faerie.sleep.client.view.graphics.light
 import se.faerie.sleep.common.light.LineOfSightCalculator
 import se.faerie.sleep.common.GameBackground._
+import se.faerie.sleep.common._
 import se.faerie.sleep.common.GraphicsCompressionHelper
 
-class SimpleLightFactory(lightCaster: LineOfSightCalculator, maxRadius: Int) extends LightFactory with GraphicsCompressionHelper {
+class SimpleLightFactory(lightCaster: LineOfSightCalculator, maxRadius: Int) extends LightFactory  {
 
 
-  def getLightSource(id: Int, seed: Long, time: Long = System.nanoTime()): LightSource = {
-    val light = loadSphericalLight(id);
-    return new SphericalLightSource(light._1 * light._2*50, light._1 * light._3*50, light._1 * light._4*50, maxRadius, lightCaster)
+  def getLightSource(data: TileLightSource, seed: Long, time: Long = System.nanoTime()): LightSource = {
+    return new SphericalLightSource(data.strength * data.red*50, data.green * data.strength*50, data.strength * data.blue*50, maxRadius, lightCaster)
   }
 
-  def getObjectAbsorption(id: Int, seed: Int, time: Long = System.nanoTime()): (Double, Double, Double) = {
-    val lightAbs = loadGraphics(id)
-    val redAbs = (lightAbs._2).asInstanceOf[Double] / Byte.MaxValue.asInstanceOf[Double];
-    val greenAbs = (lightAbs._3).asInstanceOf[Double] / Byte.MaxValue.asInstanceOf[Double];
-    val blueAbs = (lightAbs._4).asInstanceOf[Double] / Byte.MaxValue.asInstanceOf[Double];
+  def getObjectAbsorption(data: TileGraphics, seed: Int, time: Long = System.nanoTime()): (Double, Double, Double) = {
+    val redAbs = (data.red).asInstanceOf[Double] / Byte.MaxValue.asInstanceOf[Double];
+    val greenAbs = (data.green).asInstanceOf[Double] / Byte.MaxValue.asInstanceOf[Double];
+    val blueAbs = (data.blue).asInstanceOf[Double] / Byte.MaxValue.asInstanceOf[Double];
     return (redAbs, greenAbs, blueAbs)
   }
 

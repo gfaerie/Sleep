@@ -1,7 +1,7 @@
 package se.faerie.sleep.simpletest
 
 import se.faerie.sleep.common.GameBackground._
-import se.faerie.sleep.common.GameBackground
+import se.faerie.sleep.common._
 import se.faerie.sleep.common.GraphicsCompressionHelper
 import se.faerie.sleep.server.player.PlayerFactory
 import se.faerie.sleep.server.state.GameObjectMetadata._
@@ -18,11 +18,10 @@ class SimplePlayerFactory extends PlayerFactory with GraphicsCompressionHelper {
     def onCollision(owner: GameObject, target: GameObject, context: GameStateUpdateContext) { owner.movement = null }
   }
 
-  val graphics = storeGraphics('@', 0, 126, 126)
-  val light = storeGraphics(100, 100, 30, 35)
+  val graphics = new TileGraphics('@', 0.asInstanceOf[Byte], 126.asInstanceOf[Byte], 126.asInstanceOf[Byte])
 
-  val playerGraphics: (GameStateUpdateContext) => (Int) = (_) => graphics
-  val playerLight: (GameStateUpdateContext) => (Int) = (c) => storeSphericalLight((20.0+4.0*sin(c.updateTime/20000000.0)).asInstanceOf[Byte], (80.0+1.0*sin(c.updateTime/30000000.0)).asInstanceOf[Byte], (30.0+1.0*sin(c.updateTime/30000000.0)).asInstanceOf[Byte], (10.0+1.0*sin(c.updateTime/40000000.0)).asInstanceOf[Byte])
+  val playerGraphics: (GameStateUpdateContext) => (TileGraphics) = (_) => graphics
+  val playerLight: (GameStateUpdateContext) => (TileLightSource) = (c) => new TileLightSource((20.0+4.0*sin(c.updateTime/20000000.0)).asInstanceOf[Byte], (80.0+1.0*sin(c.updateTime/30000000.0)).asInstanceOf[Byte], (30.0+1.0*sin(c.updateTime/30000000.0)).asInstanceOf[Byte], (10.0+1.0*sin(c.updateTime/40000000.0)).asInstanceOf[Byte])
 
   def createPlayer(id: Long, name: String): GameObject = {
     val player = new GameObject(Set(Player)) {

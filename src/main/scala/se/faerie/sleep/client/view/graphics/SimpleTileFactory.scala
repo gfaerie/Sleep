@@ -1,12 +1,13 @@
 package se.faerie.sleep.client.view.graphics
 
+import se.faerie.sleep.common.TileGraphics
 import se.faerie.sleep.common.GameBackground._
 import se.faerie.sleep.common.GraphicsCompressionHelper
 
-class SimpleTileFactory extends TileFactory with GraphicsCompressionHelper{
+class SimpleTileFactory extends TileFactory{
 
-  def getObjectTile(id: Int, time: Long): String = {
-    return loadGraphics(id)._1 + "";
+  def getObjectTile(data: TileGraphics, time: Long): String = {
+    return data.char + "";
   }
 
   def getBackgroundTile(background: GameBackgroundVal, time: Long): String = {

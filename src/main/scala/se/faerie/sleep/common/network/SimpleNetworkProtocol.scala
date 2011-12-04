@@ -1,7 +1,7 @@
 package se.faerie.sleep.common.network
 import java.nio.ByteBuffer
 import scala.collection.mutable.ListBuffer
-import se.faerie.sleep.common.MapPosition
+import se.faerie.sleep.common._
 import se.faerie.sleep.common.network.NetworkProtocol._
 import se.faerie.sleep.common.network.SimpleNetworkProtocol._
 import java.util.Arrays
@@ -23,7 +23,7 @@ trait SimpleNetworkProtocol extends NetworkProtocol {
         }
         return data;
       }
-      case Disconnect(id,reconnect, msgId) => {
+      case Disconnect(id, reconnect, msgId) => {
         val data = ByteBuffer.allocate(20);
         data.putShort(PROTOCOL_ID);
         data.put(DISCONNECT_ID);
@@ -32,29 +32,35 @@ trait SimpleNetworkProtocol extends NetworkProtocol {
         data.putLong(msgId);
         return data;
       }
-      case GameUpdate(id,mapId, viewMode,centralPosition, objects, lights) => {
-        val length = 2 + 1+1 + 8 +8+ 2 + 2 + 2 + objects.size * 6 + 2 + lights.size * 6;
+      case GameUpdate(id, mapId, viewMode, centralPosition, objects, lights) => {
+        val length = 2 + 1 + 1 + 8 + 8 + 2 + 2 + 2 + objects.size * 6 + 2 + lights.size * 6;
         val data = ByteBuffer.allocate(length);
         data.putShort(PROTOCOL_ID);
         data.put(GAME_UPDATE_ID);
         data.putLong(id);
         data.putLong(mapId);
-        data.put((if(viewMode==Normal) 1 else 0).asInstanceOf[Byte])
+        data.put((if (viewMode == Normal) 1 else 0).asInstanceOf[Byte])
         data.putShort(centralPosition.x.toShort);
         data.putShort(centralPosition.y.toShort);
 
         data.putShort(objects.size.toShort);
         for (o <- objects) {
-          data.put((o._1.x-centralPosition.x).toByte);
-          data.put((o._1.y-centralPosition.y).toByte);
-          data.putInt(o._2);
+          data.put((o._1.x - centralPosition.x).toByte);
+          data.put((o._1.y - centralPosition.y).toByte);
+          data.put(o._2.char.asInstanceOf[Byte]);
+          data.put(o._2.red);
+          data.put(o._2.green);
+          data.put(o._2.blue);
         }
 
         data.putShort(lights.size.toShort);
         for (o <- lights) {
-          data.put((o._1.x-centralPosition.x).toByte);
-          data.put((o._1.y-centralPosition.y).toByte);
-          data.putInt(o._2);
+          data.put((o._1.x - centralPosition.x).toByte);
+          data.put((o._1.y - centralPosition.y).toByte);
+          data.put(o._2.strength);
+          data.put(o._2.red);
+          data.put(o._2.green);
+          data.put(o._2.blue);
         }
         return data;
       }
@@ -123,9 +129,9 @@ trait SimpleNetworkProtocol extends NetworkProtocol {
       }
       case DISCONNECT_ID => {
         val sessionId = message.getLong
-        val reconnect = message.get()==1;
+        val reconnect = message.get() == 1;
         val msgId = message.getLong
-        return new Disconnect(sessionId,reconnect,msgId)
+        return new Disconnect(sessionId, reconnect, msgId)
       }
       case GAME_UPDATE_ID => {
         val sessionId = message.getLong
@@ -136,17 +142,31 @@ trait SimpleNetworkProtocol extends NetworkProtocol {
         val baseY = message.getShort
 
         val nrObjects = message.getShort
-        val objectList = new ListBuffer[(MapPosition, Int)]();
+        val objectList = new ListBuffer[(MapPosition, TileGraphics)]();
         for (i <- 0 until nrObjects) {
-          objectList += readPositionUpdate(baseX, baseY, message)
+          val xDiff = message.get
+          val yDiff = message.get
+          val char = message.get.asInstanceOf[Char]
+          val red = message.get
+          val green = message.get
+          val blue = message.get
+
+          objectList += ((new MapPosition(xDiff + baseX, yDiff + baseY), new TileGraphics(char, red, green, blue)))
         }
 
         val nrLights = message.getShort
-        val lightList = new ListBuffer[(MapPosition, Int)]();
+        val lightList = new ListBuffer[(MapPosition, TileLightSource)]();
         for (i <- 0 until nrLights) {
-          lightList += readPositionUpdate(baseX, baseY, message)
+          val xDiff = message.get
+          val yDiff = message.get
+          val strength = message.get
+          val red = message.get
+          val green = message.get
+          val blue = message.get
+          lightList += ((new MapPosition(xDiff + baseX, yDiff + baseY), new TileLightSource(strength, red, green, blue)))
+
         }
-        return new GameUpdate(sessionId, mapId,if(viewMode==1) Ghost else Normal,new MapPosition(baseX, baseY), objectList.toList, lightList.toList)
+        return new GameUpdate(sessionId, mapId, if (viewMode == 1) Ghost else Normal, new MapPosition(baseX, baseY), objectList.toList, lightList.toList)
       }
       case ACTION_COMMAND_ID => {
         val sessionId = message.getLong
