@@ -33,17 +33,17 @@ class BlitzAction extends PlayerAction with GraphicsCompressionHelper with Graph
       val ownerPos = context.state.getObjectPosition(ownerId)
       
         for (i <- 0 to 100) {
-          val tailGraphics = new TileGraphics('*', 0, 0, Byte.MaxValue)
+          val tailGraphics = new TileGraphics('*', 0, i.asInstanceOf[Byte], Byte.MaxValue)
           val tail = new GameObject
 
-          val randAngle = random.nextDouble * 2*Pi
+          val randAngle = random.nextDouble * Pi-Pi/2
           val randLength = random.nextInt(3) + 1
           val xAdd = (cos(randAngle + angle) * randLength).toInt;
           val yAdd = (sin(randAngle + angle) * randLength).toInt;
           val spawnPosition = new MapPosition(ownerPos.x + xAdd, ownerPos.y + yAdd)
 
           tail.collisionHandler = tailCollisionHandler;
-          tail.movement = getMovement(angle, spawnPosition, random.nextInt(10) + 66)
+          tail.movement = getMovement(angle, spawnPosition, i/20 + 68)
           tail.graphicsId = (_) => tailGraphics
 
           context.state.addObject(spawnPosition, tail)

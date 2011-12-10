@@ -6,9 +6,11 @@ class WhiteLightColorBlender extends ColorBlender {
 
   def blend(colors: (Double, Double, Double), abs: (Double, Double, Double)): Int = {
 
-    var red = max(0, colors._1 * (1 - abs._1))
-    var green = max(0, colors._2 * (1 - abs._2))
-    var blue = max(0, colors._3 * (1 - abs._3))
+    val maxLight = max(max(colors._1,colors._2),colors._3);
+    
+    var red = max(0, maxLight * (1 - abs._1))
+    var green = max(0, maxLight * (1 - abs._2))
+    var blue = max(0, maxLight * (1 - abs._3))
 
     var maxColor = max(max(red, green), blue)
     if (maxColor > 255) {
