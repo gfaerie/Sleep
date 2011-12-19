@@ -44,7 +44,7 @@ class SimpleServer() extends Runnable {
         gameActor, 
         sender, 
         new SimplePlayerFactory, 
-        new PlayerActionFactoryImpl(Set(new MovementAction(pathFinder), new BlitzAction)), 
+        new PlayerActionFactoryImpl(Set(new MovementAction(pathFinder), new CometBlitzAction, new BlackHoleAction)), 
         new SimpleGameStateFactory) with SimpleNetworkProtocol).start
     val networkReader = new Thread(new NetworkReader(channel, controller, 1000))
     networkReader.start
