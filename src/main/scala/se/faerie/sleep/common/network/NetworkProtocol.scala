@@ -14,7 +14,7 @@ object NetworkProtocol {
   private val idCounter = new AtomicLong();
 
   // messages actually send over network
-  abstract class NetworkMessage(val id: Long)
+  sealed abstract class NetworkMessage(val id: Long)
   case class Connect(name: String, val msgId: Long = idCounter.incrementAndGet) extends NetworkMessage(msgId)
   abstract class SessionMessage(id: Long, val sessionId: Long) extends NetworkMessage(id)
   case class NetworkMessageAck(ackMsgId: Long, val sId: Long) extends SessionMessage(-2, sId)

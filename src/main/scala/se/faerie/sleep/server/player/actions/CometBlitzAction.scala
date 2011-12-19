@@ -13,12 +13,13 @@ import se.faerie.sleep.common.GameBackground._
 import se.faerie.sleep.common.GraphicsCompressionHelper
 import scala.util.Random
 import se.faerie.sleep.common.GraphicsHelper
-class BlitzAction extends PlayerAction with GraphicsCompressionHelper with GraphicsHelper {
+class CometBlitzAction extends PlayerAction with GraphicsCompressionHelper with GraphicsHelper {
 
   val random = new Random
+  val light: (GameStateUpdateContext) => (TileLightSource) = (c) => new TileLightSource((40.0+4.0*sin(c.updateTime/20000000.0)).asInstanceOf[Byte], (10.0+1.0*sin(c.updateTime/30000000.0)).asInstanceOf[Byte], (30.0+1.0*sin(c.updateTime/30000000.0)).asInstanceOf[Byte], (80.0+1.0*sin(c.updateTime/40000000.0)).asInstanceOf[Byte])
 
   val tailCollisionHandler = new CollisionHandler {
-    def isCollision(owner: GameObject, target: GameBackground, context: GameStateUpdateContext) = !target.passable
+    def isCollision(owner: GameObject, target: GameBackground, context: GameStateUpdateContext) = target.solid
     def isCollision(owner: GameObject, target: GameObject, context: GameStateUpdateContext) = false
     def onCollision(owner: GameObject, target: GameBackground, context: GameStateUpdateContext) {
       owner.hp = -1
@@ -32,20 +33,24 @@ class BlitzAction extends PlayerAction with GraphicsCompressionHelper with Graph
       val owner = context.state.getObject(ownerId)
       val ownerPos = context.state.getObjectPosition(ownerId)
       
-        for (i <- 0 to 100) {
-          val tailGraphics = new TileGraphics('*', 0, i.asInstanceOf[Byte], Byte.MaxValue)
+        for (i <- 0 to 50) {
+          val tailGraphics = new TileGraphics('*', Byte.MaxValue, (i*2).asInstanceOf[Byte], 0)
           val tail = new GameObject
 
-          val randAngle = random.nextDouble * Pi-Pi/2
-          val randLength = random.nextInt(3) + 1
-          val xAdd = (cos(randAngle + angle) * randLength).toInt;
-          val yAdd = (sin(randAngle + angle) * randLength).toInt;
+          val addAngle = random.nextDouble()*2*Pi;
+          val length = 3.0*random.nextDouble();
+          val xAdd = (cos(angle+addAngle) * length).toInt;
+          val yAdd = (sin(angle+addAngle) * length).toInt;
           val spawnPosition = new MapPosition(ownerPos.x + xAdd, ownerPos.y + yAdd)
 
           tail.collisionHandler = tailCollisionHandler;
-          tail.movement = getMovement(angle, spawnPosition, i/20 + 68)
-          tail.graphicsId = (_) => tailGraphics
+          tail.movement = getMovement(angle, spawnPosition, 67+i/5)
+          tail.graphicsId = (u) => new TileGraphics('*', Byte.MaxValue, (i*2+10).asInstanceOf[Byte], 0)
 
+          if(i%10==0){
+               tail.lightSource = (c) => new TileLightSource((7.0+2.0*sin(c.updateTime/20000000.0)).asInstanceOf[Byte], (10.0+1.0*sin(c.updateTime/30000000.0)).asInstanceOf[Byte], (30.0+1.0*sin(c.updateTime/30000000.0)).asInstanceOf[Byte], (80.0+1.0*sin(c.updateTime/40000000.0)).asInstanceOf[Byte])
+          }
+          
           context.state.addObject(spawnPosition, tail)
         }
 
@@ -76,7 +81,9 @@ class BlitzAction extends PlayerAction with GraphicsCompressionHelper with Graph
       (xAdd + start.x, yAdd + start.y)
     }
 
-    return new FunctionMovement(moveFunction, 1, speed)
+    return new FunctionMovement(moveFunction, 1, speed){
+      override def allowSkipTile = true;
+    }
   }
 
 }
