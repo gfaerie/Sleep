@@ -4,32 +4,52 @@ import se.faerie.sleep.server.ai.AIState._
 import se.faerie.sleep.server.state.update.GameStateUpdateContext
 import se.faerie.sleep.server.state.update.GameStateUpdater
 import se.faerie.sleep.server.state.GameObjectMetadata
+import se.faerie.sleep.common.MapPosition
+import se.faerie.sleep.server.state.GameObject
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.MultiMap
 
 class AIController(val updateInterval: Long) extends GameStateUpdater {
   priority = 500;
+
   def update(context: GameStateUpdateContext): Unit = {
-    assignOrders(context);
+    val players = getPlayers(context)
+    groupsToUpdate(context).foreach(g => {
+      handleGroup(context, players, g._1, g._2);
+    });
+
   }
 
-  def assignOrders(context: GameStateUpdateContext) = {
+  def handleGroup(context: GameStateUpdateContext, 
+      players: HashMap[MapPosition, GameObject], 
+      group: AIGroup, 
+      groupContents: Traversable[AIControlledGameObject]) = {
+
+    group.lastUpdated = context.updateTime;
+  }
+
+  def getPlayers(context: GameStateUpdateContext): HashMap[MapPosition, GameObject] = {
+    val players = HashMap[MapPosition, GameObject]()
+    context.state.getObjects(GameObjectMetadata.Player).foreach(o => {
+      players += (context.state.getObjectPosition(o.id) -> o)
+    });
+    return players;
+
+  }
+
+  def groupsToUpdate(context: GameStateUpdateContext): MultiMap[AIGroup, AIControlledGameObject] = {
+    val returnMap = new HashMap[AIGroup, collection.mutable.Set[AIControlledGameObject]] with MultiMap[AIGroup, AIControlledGameObject];
     context.state.getObjects(GameObjectMetadata.AIControlled).foreach(o => {
       o match {
         case g: AIControlledGameObject => {
-          if (g.lastCommand + updateInterval < context.updateTime) {
-            assignObject(g, context);
-            g.lastCommand= context.updateTime;
+          if (g.group.lastUpdated + updateInterval < context.updateTime) {
+            returnMap.addBinding(g.group, g);
           }
         }
       }
     });
-  }
+    return returnMap;
 
-  def assignObject(g: AIControlledGameObject, context: GameStateUpdateContext) {
-    g.state match {
-      case Sleeping => {}
-      case m: Moving => {}
-      case a: Attacking => {}
-    }
   }
 
 }

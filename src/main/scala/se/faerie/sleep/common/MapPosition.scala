@@ -47,4 +47,10 @@ class MapPosition(val x: Int, val y: Int) extends Ordered[MapPosition] {
     val yDiff: Double = other.y - y;
     return sqrt(xDiff * xDiff + yDiff * yDiff);
   }
+  
+   def differnece(other: MapPosition): MapPosition = {
+    val xDiff = other.x - x;
+    val yDiff = other.y - y;
+    return new MapPosition(xDiff,yDiff);
+  }
 }
