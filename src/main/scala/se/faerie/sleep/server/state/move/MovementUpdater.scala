@@ -70,6 +70,6 @@ class MovementUpdater extends GameStateUpdater with CollisionHelper {
     }
   }
 
-  def priority(): Long = { 0L }
+  priority=4;
 
 }

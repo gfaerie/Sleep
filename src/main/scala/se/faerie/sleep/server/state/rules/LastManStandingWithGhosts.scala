@@ -24,7 +24,5 @@ class LastManStandingWithGhosts(controller: ActorRef) extends GameStateUpdater {
     }
 
   }
-
-  def priority(): Long = { Long.MinValue }
-
+  priority = 1;
 }

@@ -1,23 +1,22 @@
 package se.faerie.sleep.server.state.update
+import se.faerie.sleep.server.state.priority.PriorityLevel
 
-trait GameStateUpdater {
+trait GameStateUpdater extends PriorityLevel{
 
   def update(context: GameStateUpdateContext)
-  def priority: Long;
 }
 
 object GameStateUpdater {
   val none = new GameStateUpdater {
     def update(context: GameStateUpdateContext) {context.removeUpdater(this)}
-    def priority: Long = 0;
   }
 
-  def multiple(updaters: Traversable[GameStateUpdater], priortity: Long = 0) = {
+  def multiple(updaters: Traversable[GameStateUpdater], priority: Long = 0) = {
     new GameStateUpdater() {
       def update(context: GameStateUpdateContext) {
         updaters.foreach(u => u.update(context))
       }
-      def priority: Long = Long.MaxValue;
+      this.priority=priority;
     }
   }
 }

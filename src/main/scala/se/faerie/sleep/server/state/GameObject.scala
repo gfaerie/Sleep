@@ -8,10 +8,12 @@ import se.faerie.sleep.common.TileGraphics
 
 object GameObject{
 	val idCounter = new AtomicLong(Long.MinValue);
+	val emptySet : Set[GameObjectMetadata] = Set();
 }
 
-class GameObject(val staticMetadata : Set[GameObjectMetadata], val id : Long = GameObject.idCounter.incrementAndGet){
+class GameObject(val staticMetadata : Set[GameObjectMetadata]=GameObject.emptySet, val id : Long = GameObject.idCounter.incrementAndGet){
 	def this() = this(Set.empty,GameObject.idCounter.incrementAndGet)
+	var origin : Long = id;
 	var layer : Byte = 0;
 	var team : Byte = 0;
 	var hp : Float = 0;

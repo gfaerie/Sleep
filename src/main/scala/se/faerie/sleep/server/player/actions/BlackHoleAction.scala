@@ -39,7 +39,7 @@ class BlackHoleAction extends PlayerAction with MovementHelper {
         context.removeUpdater(this)
       }
     }
-    def priority: Long = 5;
+    priority = 5;
   }
 
   val id: Long = 2

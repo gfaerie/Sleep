@@ -20,7 +20,7 @@ class PlayerActionFactoryImpl(actions: Traversable[PlayerAction]) extends Player
         context.removeUpdater(this)
       }
     }
-    def priority: Long = 100;
+    priority = 100;
   }
 
   def createAction(objectId: Long, actionId: Long, target: MapPosition): GameStateUpdater = {

@@ -6,7 +6,6 @@ import akka.actor._
 import se.faerie.sleep.server.state.update.GameStateUpdateContext
 import se.faerie.sleep.common.network.NetworkProtocol._
 import se.faerie.sleep.server.state.update.helper.SingleUpdate
-import se.faerie.sleep.server.state.priority.HighPriority
 import se.faerie.sleep.server.state.GameObject
 import se.faerie.sleep.common.MapPosition
 import se.faerie.sleep.common.network.NetworkProtocol
@@ -19,7 +18,7 @@ abstract class ServerNetworkController(game: ActorRef, sender: ActorRef, playerF
 
   private class ClientInfo(val address: SocketAddress, val name: String)
 
-  private class RemoveClient(objectId: Long) extends SingleUpdate with HighPriority {
+  private class RemoveClient(objectId: Long) extends SingleUpdate {
     def doUpdate(context: GameStateUpdateContext) {
       try {
         context.state.removeObject(objectId);
@@ -28,10 +27,11 @@ abstract class ServerNetworkController(game: ActorRef, sender: ActorRef, playerF
         case e: NoSuchElementException => {}
       }
     };
+    priority=1000;
     override def toString = "Player removal for client " + objectId;
   };
 
-  private class AddClient(player: GameObject) extends SingleUpdate with HighPriority {
+  private class AddClient(player: GameObject) extends SingleUpdate {
     def doUpdate(context: GameStateUpdateContext) {
       val random = new Random()
       // add at random position
@@ -45,6 +45,7 @@ abstract class ServerNetworkController(game: ActorRef, sender: ActorRef, playerF
       }
     };
     override def toString = "Player add for client " + player.id;
+    priority=1000;
   };
 
   private val clients = Map[Long, ClientInfo]();

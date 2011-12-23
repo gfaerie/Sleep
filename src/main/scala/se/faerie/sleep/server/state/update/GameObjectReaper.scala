@@ -15,6 +15,6 @@ class GameObjectReaper extends GameStateUpdater {
   }
 
   // run almost last
-  def priority(): Long = { 2 }
+  priority =2;
 
 }
