@@ -30,65 +30,74 @@ class AIController(val updateInterval: Long) extends GameStateUpdater {
     group: AIGroup,
     groupContents: Traversable[AIControlledGameObject]) = {
 
-    var groupTarget: java.lang.Long = null;
     val state = context.state;
     // for each monster in group
-    groupContents.foreach(m => {
+    groupContents.filter(g => (g.lastUpdated + updateInterval) < context.updateTime).foreach(m => {
       m.state match {
         case Sleeping => {
-          if (groupTarget != null) {
-            if (targetInView(context, m, groupTarget)) {
-              attack(context, m, groupTarget);
-            }
-          } else {
-            val target = evaluateTargets(context, players, m);
-            if (target != null) {
-              attack(context, m, target.id);
-              groupTarget = target.id;
-            }
+          val target = evaluateTargets(context, players, m);
+          if (target != null) {
+            attack(context, m, target.id);
+            group.groupTarget = target.id;
+          } else if (group.groupTarget != null) {
+            attack(context, m, group.groupTarget);
+
           }
         }
         case p: Patrolling => {
           val target = evaluateTargets(context, players, m);
           if (target != null) {
             attack(context, m, target.id);
-            groupTarget = target.id;
+            group.groupTarget = target.id;
+          } else if (group.groupTarget != null) {
+            attack(context, m, group.groupTarget);
+          } else if (target.movement == null) {
+            // plot path to new position
           }
-
-          //check if we reached the end of the patrol
         }
         case p: Pursuing => {
+          // is my target still alive?
+
+          // can I see my target?
+
+          // have I been attacked by another target different from the on im pursuing consider switching
+        }
+        case a: Attacking => {
+          // is my target still alive?
+
+          // can I see my target?
+
+          // have I been attacked by another target different from the on im attacking consider switching
 
         }
-        case a: Attacking => {}
       }
+      m.lastUpdated = context.updateTime
     })
+  }
 
-    // if not attacked check for nearby players to engage
+  def targetInView(context: GameStateUpdateContext, attacker: GameObject, target: Long): Boolean = {
+    return false;
+  }
 
-    // if attacking player check if target switch
-
-    // if we take a new target alert the rest of the group
-
+  def attack(context: GameStateUpdateContext, attacker: GameObject, target: Long) {
     // can we see the target?
 
     // put on pursue path to engage in melee
 
     // if we can't see the player go to its last known position
-
-    group.lastUpdated = context.updateTime;
-  }
-
-  def targetInView(context: GameStateUpdateContext, attacker: GameObject, target: Long): Boolean ={
-	  return false;
-  }
-
-  def attack(context: GameStateUpdateContext, attacker: GameObject, target: Long) {
-
   }
 
   def evaluateTargets(context: GameStateUpdateContext, players: HashMap[MapPosition, GameObject], monster: AIControlledGameObject): GameObject = {
 
+    // check players within range
+    
+    // draw a line to players in range
+    
+    // calculate score from line, unblocked =1, blocked =10
+    
+    // if score < border return
+    
+    // if no valid targets return null
     return null;
   }
 
@@ -106,9 +115,7 @@ class AIController(val updateInterval: Long) extends GameStateUpdater {
     context.state.getObjects(GameObjectMetadata.AIControlled).foreach(o => {
       o match {
         case g: AIControlledGameObject => {
-          if (g.group.lastUpdated + updateInterval < context.updateTime) {
-            returnMap.addBinding(g.group, g);
-          }
+          returnMap.addBinding(g.group, g);
         }
       }
     });
