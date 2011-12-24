@@ -11,6 +11,7 @@ trait GameState {
 	def getAllObjects(): Traversable[GameObject]
 	def getObjects(metadata : GameObjectMetadata): Traversable[GameObject]
 	def removeObject(objectId: Long)
+	def objectExists(objectId: Long): Boolean;
 	def moveObject(objectId: Long,position: MapPosition)
 	def getObject(objectId: Long) : GameObject
 	def getObjectsAtPosition(position: MapPosition) : Traversable[GameObject]

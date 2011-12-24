@@ -60,6 +60,8 @@ class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gri
     objectMap -= objectId;
   };
 
+  def objectExists(objectId: Long) = objectMap.contains(objectId)
+
   def getObject(objectId: Long) = objectMap(objectId);
 
   def getObjectsAtPosition(position: MapPosition): Traversable[GameObject] = {

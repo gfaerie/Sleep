@@ -10,6 +10,11 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.MultiMap
 
 class AIController(val updateInterval: Long) extends GameStateUpdater {
+
+  class PlayerStatus(val openTiles: Int, val closedTiles: Int, val range: Double, playerId: Long) {
+
+  }
+
   priority = 500;
 
   def update(context: GameStateUpdateContext): Unit = {
@@ -20,12 +25,71 @@ class AIController(val updateInterval: Long) extends GameStateUpdater {
 
   }
 
-  def handleGroup(context: GameStateUpdateContext, 
-      players: HashMap[MapPosition, GameObject], 
-      group: AIGroup, 
-      groupContents: Traversable[AIControlledGameObject]) = {
+  def handleGroup(context: GameStateUpdateContext,
+    players: HashMap[MapPosition, GameObject],
+    group: AIGroup,
+    groupContents: Traversable[AIControlledGameObject]) = {
+
+    var groupTarget: java.lang.Long = null;
+    val state = context.state;
+    // for each monster in group
+    groupContents.foreach(m => {
+      m.state match {
+        case Sleeping => {
+          if (groupTarget != null) {
+            if (targetInView(context, m, groupTarget)) {
+              attack(context, m, groupTarget);
+            }
+          } else {
+            val target = evaluateTargets(context, players, m);
+            if (target != null) {
+              attack(context, m, target.id);
+              groupTarget = target.id;
+            }
+          }
+        }
+        case p: Patrolling => {
+          val target = evaluateTargets(context, players, m);
+          if (target != null) {
+            attack(context, m, target.id);
+            groupTarget = target.id;
+          }
+
+          //check if we reached the end of the patrol
+        }
+        case p: Pursuing => {
+
+        }
+        case a: Attacking => {}
+      }
+    })
+
+    // if not attacked check for nearby players to engage
+
+    // if attacking player check if target switch
+
+    // if we take a new target alert the rest of the group
+
+    // can we see the target?
+
+    // put on pursue path to engage in melee
+
+    // if we can't see the player go to its last known position
 
     group.lastUpdated = context.updateTime;
+  }
+
+  def targetInView(context: GameStateUpdateContext, attacker: GameObject, target: Long): Boolean ={
+	  return false;
+  }
+
+  def attack(context: GameStateUpdateContext, attacker: GameObject, target: Long) {
+
+  }
+
+  def evaluateTargets(context: GameStateUpdateContext, players: HashMap[MapPosition, GameObject], monster: AIControlledGameObject): GameObject = {
+
+    return null;
   }
 
   def getPlayers(context: GameStateUpdateContext): HashMap[MapPosition, GameObject] = {
@@ -49,7 +113,5 @@ class AIController(val updateInterval: Long) extends GameStateUpdater {
       }
     });
     return returnMap;
-
   }
-
 }
