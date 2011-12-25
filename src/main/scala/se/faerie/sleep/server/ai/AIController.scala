@@ -9,6 +9,7 @@ import se.faerie.sleep.server.state.GameObject
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MultiMap
 import se.faerie.sleep.common.GraphicsHelper
+import se.faerie.sleep.common.pathfinding.PathFinder
 
 /**
  *
@@ -20,7 +21,7 @@ import se.faerie.sleep.common.GraphicsHelper
  * 4) Add ranged combat and other skills
  *
  */
-class AIController(val updateInterval: Long) extends GameStateUpdater with GraphicsHelper {
+class AIController(val updateInterval: Long, actionFactory: AIActionFactory) extends GameStateUpdater with GraphicsHelper {
 
   class TargetEvaluation(val target: GameObject, val range: Double, val blockedTiles: Int, val freeTiles: Int, val score: Double)
 
@@ -47,8 +48,8 @@ class AIController(val updateInterval: Long) extends GameStateUpdater with Graph
     }
 
     // for each monster in group
-    groupContents.filter(g => (g.lastUpdated + updateInterval) < context.updateTime).foreach(m => {
-      
+    groupContents.filter(f => (f.lastUpdated + updateInterval) < context.updateTime).foreach(m => {
+
       // remove last attacker if it no longer exists
       if (m.lastAttacker != null && (!context.state.objectExists(m.lastAttacker))) {
         m.lastAttacker = null;
@@ -58,13 +59,13 @@ class AIController(val updateInterval: Long) extends GameStateUpdater with Graph
         case Sleeping => {
           val targetEval = evaluateTargets(context, players, m, group, null);
           if (targetEval != null) {
-            attackTarget(context, m, targetEval);
+            attackTarget(context, m, group, targetEval);
           }
         }
         case p: Patrolling => {
           val targetEval = evaluateTargets(context, players, m, group, null);
           if (targetEval != null) {
-            attackTarget(context, m, targetEval);
+            attackTarget(context, m, group, targetEval);
           } else if (m.movement == null) {
             // plot path to new position
           }
@@ -76,7 +77,7 @@ class AIController(val updateInterval: Long) extends GameStateUpdater with Graph
 
           } // declare new attack if new target or target is in view or we have stopped
           else if ((targetEval.target.id != p.target) || (targetEval.blockedTiles == 0) || (m.movement == null)) {
-            attackTarget(context, m, targetEval);
+            attackTarget(context, m, group, targetEval);
           }
 
         }
@@ -87,21 +88,30 @@ class AIController(val updateInterval: Long) extends GameStateUpdater with Graph
 
           } // declare new attack if new target or target is not in view or we have stopped
           else if ((targetEval.target.id != a.target) || (targetEval.blockedTiles > 0) || (m.movement == null)) {
-            attackTarget(context, m, targetEval);
+            attackTarget(context, m, group, targetEval);
           }
         }
       }
 
       m.lastUpdated = context.updateTime
     })
+
+    // assign new grouptarget
   }
 
-  def attackTarget(context: GameStateUpdateContext, attacker: GameObject, targetEval: TargetEvaluation) {
+  def attackTarget(context: GameStateUpdateContext, attacker: AIControlledGameObject, group: AIGroup, targetEval: TargetEvaluation) {
     // can we see the target?
-
-    // put on pursue path to engage in melee
-
-    // if we can't see the player go to its last known position
+    if (targetEval.blockedTiles == 0) {
+      attacker.state = Attacking(targetEval.target.id)
+      context.addUpdater(actionFactory.createMeleeAction(attacker.id, targetEval.target.id, -1));
+    } // else pursue
+    else {
+      attacker.state = Pursuing(targetEval.target.id)
+      context.addUpdater(actionFactory.createPursuitAction(attacker.id, context.state.getObjectPosition(targetEval.target.id), -1));
+    }
+    if (group.groupTarget == null) {
+      group.groupTarget = targetEval.target.id;
+    }
   }
 
   def evaluateTargets(context: GameStateUpdateContext, players: HashMap[MapPosition, GameObject], monster: AIControlledGameObject, group: AIGroup, currentTarget: java.lang.Long): TargetEvaluation = {
@@ -109,10 +119,10 @@ class AIController(val updateInterval: Long) extends GameStateUpdater with Graph
     val currentPosition = context.state.getObjectPosition(monster.id);
     players.foreach(p => {
       val range = currentPosition.distanceTo(p._1);
-      var score = 0.0;
       if (range < monster.aggressionHandler.maxRange) {
+        var score = 0.0;
 
-        // get distance and calc blocked and free tiles. NOTE: this is most likely the performance bottleneck
+        // get distance and calc blocked and free tiles. NOTE: this is most likely the performance bottleneck but i really like to avoid radius only triggers
         var freeTiles = 0;
         var solidTiles = 0;
         buildLine(currentPosition.x, currentPosition.y, p._1.x, p._1.y).foreach(t => {

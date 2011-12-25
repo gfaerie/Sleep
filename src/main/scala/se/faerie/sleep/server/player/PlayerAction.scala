@@ -7,5 +7,5 @@ import se.faerie.sleep.common.MapPosition
 trait PlayerAction {
   def id : Long;
   def isValid(owner : GameObject) : Boolean;
-  def doAction(owner : GameObject , targte : MapPosition , context : GameStateUpdateContext);
+  def doAction(owner : GameObject , target : MapPosition , context : GameStateUpdateContext);
 }
