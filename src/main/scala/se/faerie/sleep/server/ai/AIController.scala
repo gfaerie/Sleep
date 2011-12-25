@@ -56,12 +56,14 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
       }
 
       m.state match {
+
         case Sleeping => {
           val targetEval = evaluateTargets(context, players, m, group, null);
           if (targetEval != null) {
             attackTarget(context, m, group, targetEval);
           }
         }
+        
         case p: Patrolling => {
           val targetEval = evaluateTargets(context, players, m, group, null);
           if (targetEval != null) {
@@ -70,6 +72,7 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
             // plot path to new position
           }
         }
+        
         case p: Pursuing => {
           val targetEval = evaluateTargets(context, players, m, group, p.target);
           // aggro lost
@@ -79,8 +82,8 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
           else if ((targetEval.target.id != p.target) || (targetEval.blockedTiles == 0) || (m.movement == null)) {
             attackTarget(context, m, group, targetEval);
           }
-
         }
+        
         case a: Attacking => {
           val targetEval = evaluateTargets(context, players, m, group, a.target);
           // aggro lost
@@ -109,6 +112,8 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
       attacker.state = Pursuing(targetEval.target.id)
       context.addUpdater(actionFactory.createPursuitAction(attacker.id, context.state.getObjectPosition(targetEval.target.id), -1));
     }
+
+    // alert the rest of the group that we got a new target
     if (group.groupTarget == null) {
       group.groupTarget = targetEval.target.id;
     }
