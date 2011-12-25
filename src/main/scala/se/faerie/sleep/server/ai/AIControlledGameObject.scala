@@ -3,7 +3,7 @@ package se.faerie.sleep.server.ai
 import se.faerie.sleep.server.state.GameObject
 import se.faerie.sleep.server.state.GameObjectMetadata;
 
-class AIControlledGameObject(val group : AIGroup, val additionalMetadata : Set[GameObjectMetadata] = null) extends GameObject(AIControlledGameObject.getMetadata(additionalMetadata)) {
+class AIControlledGameObject(val group : AIGroup,val aggressionHandler : AggressionHandler, val additionalMetadata : Set[GameObjectMetadata] = null) extends GameObject(AIControlledGameObject.getMetadata(additionalMetadata)) {
 	var state : AIState= AIState.Sleeping; 
 	var lastAttacker : java.lang.Long =  null;
 	var lastUpdated : Long = Long.MinValue;

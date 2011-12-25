@@ -8,12 +8,21 @@ import se.faerie.sleep.common.MapPosition
 import se.faerie.sleep.server.state.GameObject
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MultiMap
+import se.faerie.sleep.common.GraphicsHelper
 
-class AIController(val updateInterval: Long) extends GameStateUpdater {
+/**
+ *
+ * Goals:
+ *
+ * 1) Get prototype working with melee
+ * 2) Worry about performance
+ * 3) Model better
+ * 4) Add ranged combat and other skills
+ *
+ */
+class AIController(val updateInterval: Long) extends GameStateUpdater with GraphicsHelper {
 
-  class PlayerStatus(val openTiles: Int, val closedTiles: Int, val range: Double, playerId: Long) {
-
-  }
+  class TargetEvaluation(val target: GameObject, val range: Double, val blockedTiles: Int, val freeTiles: Int, val score: Double)
 
   priority = 500;
 
@@ -31,55 +40,63 @@ class AIController(val updateInterval: Long) extends GameStateUpdater {
     groupContents: Traversable[AIControlledGameObject]) = {
 
     val state = context.state;
+
+    // remove group target if it no longer exists
+    if (group.groupTarget != null && (!context.state.objectExists(group.groupTarget))) {
+      group.groupTarget = null;
+    }
+
     // for each monster in group
     groupContents.filter(g => (g.lastUpdated + updateInterval) < context.updateTime).foreach(m => {
+      
+      // remove last attacker if it no longer exists
+      if (m.lastAttacker != null && (!context.state.objectExists(m.lastAttacker))) {
+        m.lastAttacker = null;
+      }
+
       m.state match {
         case Sleeping => {
-          val target = evaluateTargets(context, players, m);
-          if (target != null) {
-            attack(context, m, target.id);
-            group.groupTarget = target.id;
-          } else if (group.groupTarget != null) {
-            attack(context, m, group.groupTarget);
-
+          val targetEval = evaluateTargets(context, players, m, group, null);
+          if (targetEval != null) {
+            attackTarget(context, m, targetEval);
           }
         }
         case p: Patrolling => {
-          val target = evaluateTargets(context, players, m);
-          if (target != null) {
-            attack(context, m, target.id);
-            group.groupTarget = target.id;
-          } else if (group.groupTarget != null) {
-            attack(context, m, group.groupTarget);
-          } else if (target.movement == null) {
+          val targetEval = evaluateTargets(context, players, m, group, null);
+          if (targetEval != null) {
+            attackTarget(context, m, targetEval);
+          } else if (m.movement == null) {
             // plot path to new position
           }
         }
         case p: Pursuing => {
-          // is my target still alive?
+          val targetEval = evaluateTargets(context, players, m, group, p.target);
+          // aggro lost
+          if (targetEval == null) {
 
-          // can I see my target?
+          } // declare new attack if new target or target is in view or we have stopped
+          else if ((targetEval.target.id != p.target) || (targetEval.blockedTiles == 0) || (m.movement == null)) {
+            attackTarget(context, m, targetEval);
+          }
 
-          // have I been attacked by another target different from the on im pursuing consider switching
         }
         case a: Attacking => {
-          // is my target still alive?
+          val targetEval = evaluateTargets(context, players, m, group, a.target);
+          // aggro lost
+          if (targetEval == null) {
 
-          // can I see my target?
-
-          // have I been attacked by another target different from the on im attacking consider switching
-
+          } // declare new attack if new target or target is not in view or we have stopped
+          else if ((targetEval.target.id != a.target) || (targetEval.blockedTiles > 0) || (m.movement == null)) {
+            attackTarget(context, m, targetEval);
+          }
         }
       }
+
       m.lastUpdated = context.updateTime
     })
   }
 
-  def targetInView(context: GameStateUpdateContext, attacker: GameObject, target: Long): Boolean = {
-    return false;
-  }
-
-  def attack(context: GameStateUpdateContext, attacker: GameObject, target: Long) {
+  def attackTarget(context: GameStateUpdateContext, attacker: GameObject, targetEval: TargetEvaluation) {
     // can we see the target?
 
     // put on pursue path to engage in melee
@@ -87,18 +104,49 @@ class AIController(val updateInterval: Long) extends GameStateUpdater {
     // if we can't see the player go to its last known position
   }
 
-  def evaluateTargets(context: GameStateUpdateContext, players: HashMap[MapPosition, GameObject], monster: AIControlledGameObject): GameObject = {
+  def evaluateTargets(context: GameStateUpdateContext, players: HashMap[MapPosition, GameObject], monster: AIControlledGameObject, group: AIGroup, currentTarget: java.lang.Long): TargetEvaluation = {
+    var target: TargetEvaluation = null;
+    val currentPosition = context.state.getObjectPosition(monster.id);
+    players.foreach(p => {
+      val range = currentPosition.distanceTo(p._1);
+      var score = 0.0;
+      if (range < monster.aggressionHandler.maxRange) {
 
-    // check players within range
-    
-    // draw a line to players in range
-    
-    // calculate score from line, unblocked =1, blocked =10
-    
-    // if score < border return
-    
-    // if no valid targets return null
-    return null;
+        // get distance and calc blocked and free tiles. NOTE: this is most likely the performance bottleneck
+        var freeTiles = 0;
+        var solidTiles = 0;
+        buildLine(currentPosition.x, currentPosition.y, p._1.x, p._1.y).foreach(t => {
+          if (context.state.getBackground(t.x, t.y).solid) {
+            solidTiles += 1;
+          } else {
+            freeTiles += 1;
+          }
+        });
+        score += monster.aggressionHandler.blockedTileBonus(solidTiles);
+        score += monster.aggressionHandler.freeTileBonus(solidTiles);
+
+        // add bonus for this player type
+        score += monster.aggressionHandler.objectBonus(p._2);
+
+        // add bonuses for targets and attackers
+        if (currentTarget != null && (currentTarget == p._2.id)) {
+          score += monster.aggressionHandler.currentTargetBonus;
+        }
+        if (group.groupTarget != null && (group.groupTarget == p._2.id)) {
+          score += monster.aggressionHandler.groupTargetBonus;
+        }
+        if (monster.lastAttacker != null && (monster.lastAttacker == p._2.id)) {
+          score += monster.aggressionHandler.latestAttackerBonus;
+        }
+
+        // is this the new top target? 
+        if (score > monster.aggressionHandler.aggroLimit && (target == null || score > target.score)) {
+          target = new TargetEvaluation(p._2, range, solidTiles, freeTiles, score);
+        }
+      }
+
+    })
+    return target;
   }
 
   def getPlayers(context: GameStateUpdateContext): HashMap[MapPosition, GameObject] = {
