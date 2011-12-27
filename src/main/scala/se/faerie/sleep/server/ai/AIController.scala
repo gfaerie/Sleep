@@ -63,7 +63,7 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
             attackTarget(context, m, group, targetEval);
           }
         }
-        
+
         case p: Patrolling => {
           val targetEval = evaluateTargets(context, players, m, group, null);
           if (targetEval != null) {
@@ -72,7 +72,7 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
             // plot path to new position
           }
         }
-        
+
         case p: Pursuing => {
           val targetEval = evaluateTargets(context, players, m, group, p.target);
           // aggro lost
@@ -83,7 +83,7 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
             attackTarget(context, m, group, targetEval);
           }
         }
-        
+
         case a: Attacking => {
           val targetEval = evaluateTargets(context, players, m, group, a.target);
           // aggro lost
@@ -124,12 +124,11 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
     val currentPosition = context.state.getObjectPosition(monster.id);
     players.foreach(p => {
       val range = currentPosition.distanceTo(p._1);
+      var score = 0.0;
+      var freeTiles = 0;
+      var solidTiles = 0;
       if (range < monster.aggressionHandler.maxRange) {
-        var score = 0.0;
-
         // get distance and calc blocked and free tiles. NOTE: this is most likely the performance bottleneck but i really like to avoid radius only triggers
-        var freeTiles = 0;
-        var solidTiles = 0;
         buildLine(currentPosition.x, currentPosition.y, p._1.x, p._1.y).foreach(t => {
           if (context.state.getBackground(t.x, t.y).solid) {
             solidTiles += 1;
@@ -137,29 +136,33 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
             freeTiles += 1;
           }
         });
-        score += monster.aggressionHandler.blockedTileBonus(solidTiles);
-        score += monster.aggressionHandler.freeTileBonus(solidTiles);
 
-        // add bonus for this player type
-        score += monster.aggressionHandler.objectBonus(p._2);
-
-        // add bonuses for targets and attackers
-        if (currentTarget != null && (currentTarget == p._2.id)) {
-          score += monster.aggressionHandler.currentTargetBonus;
-        }
-        if (group.groupTarget != null && (group.groupTarget == p._2.id)) {
-          score += monster.aggressionHandler.groupTargetBonus;
-        }
-        if (monster.lastAttacker != null && (monster.lastAttacker == p._2.id)) {
-          score += monster.aggressionHandler.latestAttackerBonus;
-        }
-
-        // is this the new top target? 
-        if (score > monster.aggressionHandler.aggroLimit && (target == null || score > target.score)) {
-          target = new TargetEvaluation(p._2, range, solidTiles, freeTiles, score);
-        }
+      } else {
+        freeTiles = 20;
+        solidTiles = 20;
       }
 
+      score += monster.aggressionHandler.blockedTileBonus(solidTiles);
+      score += monster.aggressionHandler.freeTileBonus(solidTiles);
+
+      // add bonus for this player type
+      score += monster.aggressionHandler.objectBonus(p._2);
+
+      // add bonuses for targets and attackers
+      if (currentTarget != null && (currentTarget == p._2.id)) {
+        score += monster.aggressionHandler.currentTargetBonus;
+      }
+      if (group.groupTarget != null && (group.groupTarget == p._2.id)) {
+        score += monster.aggressionHandler.groupTargetBonus;
+      }
+      if (monster.lastAttacker != null && (monster.lastAttacker == p._2.id)) {
+        score += monster.aggressionHandler.latestAttackerBonus;
+      }
+
+      // is this the new top target? 
+      if (score > monster.aggressionHandler.aggroLimit && (target == null || score > target.score)) {
+        target = new TargetEvaluation(p._2, range, solidTiles, freeTiles, score);
+      }
     })
     return target;
   }

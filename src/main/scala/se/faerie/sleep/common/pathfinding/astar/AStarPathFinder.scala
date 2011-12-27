@@ -28,10 +28,10 @@ class AStarPathFinder(heuristic: AStarHeuristic) extends PathFinder {
     }
   };
 
-  def findPath(blockFunction: (Int, Int) => Boolean, start: MapPosition, end: MapPosition): List[MapPosition] = {
+  def findPath(costFunction: (Int, Int) => Double, start: MapPosition, end: MapPosition): List[MapPosition] = {
     val closedSet = Set[AStarMapNode]()
     val openQueue = new PriorityQueue[AStarMapNode]()
-    if(!blockFunction(start.x,start.y)){
+    if(costFunction(start.x,start.y)<0){
     	openQueue += new AStarMapNode(null, start.x, start.y, 0, 0, 0)
     }
     
@@ -43,9 +43,9 @@ class AStarPathFinder(heuristic: AStarHeuristic) extends PathFinder {
       }
       neighbours.foreach(pos =>
         {
-          val cost: Double = if (pos.x == 0 || pos.y == 0) 1 else sqrtTwo;
+          val cost: Double = (if (pos.x == 0 || pos.y == 0) 1 else sqrtTwo)*costFunction(current.x + pos.x, current.y + pos.y);
           val node = new AStarMapNode(current, current.x + pos.x, current.y + pos.y, 0, 0, cost + current.cost)
-          if (!(blockFunction(node.x, node.y) || closedSet.contains(node))) {
+          if (!(cost<0 || closedSet.contains(node))) {
             node.heuristic = heuristic.cost(node.x, node.y, end.x, end.y)
             openQueue += node
           }

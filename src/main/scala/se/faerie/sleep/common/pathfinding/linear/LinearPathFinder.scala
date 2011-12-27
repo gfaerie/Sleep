@@ -7,10 +7,10 @@ import se.faerie.sleep.common.pathfinding._
 
 class LinearPathFinder extends PathFinder with GraphicsHelper {
 
-  def findPath(blockFunction: (Int, Int) => Boolean, start: MapPosition, end: MapPosition): List[MapPosition] = {
+  def findPath(costFunction: (Int, Int) => Double, start: MapPosition, end: MapPosition): List[MapPosition] = {
     val path = buildLine(start.x, start.y, end.x, end.y);
     path.foreach(pos =>
-      if (blockFunction(pos.x, pos.y)) {
+      if (costFunction(pos.x, pos.y)<0) {
          return emptyList;
       });
     return path;

@@ -16,9 +16,9 @@ class MovementAction(pathFinder: PathFinder) extends PlayerAction {
 
   def doAction(owner: GameObject, target: MapPosition, context: GameStateUpdateContext) {
     val start = context.state.getObjectPosition(owner.id)
-    val blockFunction: (Int, Int) => (Boolean) = (x, y) => owner.collisionHandler.isCollision(owner, context.state.getBackground(x, y), context)
+    val costFunction: (Int, Int) => (Double) = (x, y) => if(owner.collisionHandler.isCollision(owner, context.state.getBackground(x, y), context)) -1 else 1;
     if (context.state.insideGame(target.x, target.y)) {
-      val path = pathFinder.findPath(blockFunction, start, target)
+      val path = pathFinder.findPath(costFunction, start, target)
       owner.movement = new PathMovement(path, 0, getSpeed(owner))
     }
   }
