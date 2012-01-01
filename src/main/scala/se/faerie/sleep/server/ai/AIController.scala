@@ -7,6 +7,7 @@ import se.faerie.sleep.server.state.GameObjectMetadata
 import se.faerie.sleep.common.MapPosition
 import se.faerie.sleep.server.state.GameObject
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.Map
 import scala.collection.mutable.MultiMap
 import se.faerie.sleep.common.GraphicsHelper
 import se.faerie.sleep.common.pathfinding.PathFinder
@@ -36,9 +37,9 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
   }
 
   def handleGroup(context: GameStateUpdateContext,
-    players: HashMap[MapPosition, GameObject],
-    group: AIGroup,
-    groupContents: Traversable[AIControlledGameObject]) = {
+                  players: Map[MapPosition, GameObject],
+                  group: AIGroup,
+                  groupContents: Traversable[AIControlledGameObject]) = {
 
     val state = context.state;
 
@@ -47,7 +48,7 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
       group.groupTarget = null;
     }
 
-    // for each monster in group
+    // for each monster in group that hasn't been updated in the designated interval
     groupContents.filter(f => (f.lastUpdated + updateInterval) < context.updateTime).foreach(m => {
 
       // remove last attacker if it no longer exists
@@ -68,7 +69,8 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
           val targetEval = evaluateTargets(context, players, m, group, null);
           if (targetEval != null) {
             attackTarget(context, m, group, targetEval);
-          } else if (m.movement == null) {
+          }
+          else if (m.movement == null) {
             // plot path to new position
           }
         }
@@ -77,10 +79,15 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
           val targetEval = evaluateTargets(context, players, m, group, p.target);
           // aggro lost
           if (targetEval == null) {
-
-          } // declare new attack if new target or target is in view or we have stopped
+            noTarget(context, m, group);
+          } 
+          // declare new attack if new target or target is in view or we have stopped
           else if ((targetEval.target.id != p.target) || (targetEval.blockedTiles == 0) || (m.movement == null)) {
             attackTarget(context, m, group, targetEval);
+          }
+          else if (p.pursuitStarted + m.aggressionHandler.maxPursuitTime > context.updateTime) {
+            noTarget(context, m, group);
+
           }
         }
 
@@ -88,8 +95,9 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
           val targetEval = evaluateTargets(context, players, m, group, a.target);
           // aggro lost
           if (targetEval == null) {
-
-          } // declare new attack if new target or target is not in view or we have stopped
+            noTarget(context, m, group);
+          } 
+          // declare new attack if new target or target is not in view or we have stopped
           else if ((targetEval.target.id != a.target) || (targetEval.blockedTiles > 0) || (m.movement == null)) {
             attackTarget(context, m, group, targetEval);
           }
@@ -102,6 +110,10 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
     // assign new grouptarget
   }
 
+  def noTarget(context: GameStateUpdateContext, idle: AIControlledGameObject, group: AIGroup) {
+
+  }
+
   def attackTarget(context: GameStateUpdateContext, attacker: AIControlledGameObject, group: AIGroup, targetEval: TargetEvaluation) {
     // can we see the target?
     if (targetEval.blockedTiles == 0) {
@@ -109,7 +121,7 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
       context.addUpdater(actionFactory.createMeleeAction(attacker.id, targetEval.target.id, -1));
     } // else pursue
     else {
-      attacker.state = Pursuing(targetEval.target.id)
+      attacker.state = Pursuing(targetEval.target.id, System.nanoTime())
       context.addUpdater(actionFactory.createPursuitAction(attacker.id, context.state.getObjectPosition(targetEval.target.id), -1));
     }
 
@@ -119,7 +131,7 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
     }
   }
 
-  def evaluateTargets(context: GameStateUpdateContext, players: HashMap[MapPosition, GameObject], monster: AIControlledGameObject, group: AIGroup, currentTarget: java.lang.Long): TargetEvaluation = {
+  def evaluateTargets(context: GameStateUpdateContext, players: Map[MapPosition, GameObject], monster: AIControlledGameObject, group: AIGroup, currentTarget: java.lang.Long): TargetEvaluation = {
     var target: TargetEvaluation = null;
     val currentPosition = context.state.getObjectPosition(monster.id);
     players.foreach(p => {
@@ -127,47 +139,47 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
       var score = 0.0;
       var freeTiles = 0;
       var solidTiles = 0;
-      if (range < monster.aggressionHandler.maxRange) {
+      if (range < monster.aggressionHandler.maxRange ||
+        (currentTarget != null && (currentTarget == p._2.id)) ||
+        (group.groupTarget != null && (group.groupTarget == p._2.id)) ||
+        (monster.lastAttacker != null && (monster.lastAttacker == p._2.id))) {
         // get distance and calc blocked and free tiles. NOTE: this is most likely the performance bottleneck but i really like to avoid radius only triggers
         buildLine(currentPosition.x, currentPosition.y, p._1.x, p._1.y).foreach(t => {
           if (context.state.getBackground(t.x, t.y).solid) {
             solidTiles += 1;
-          } else {
+          }
+          else {
             freeTiles += 1;
           }
         });
 
-      } else {
-        freeTiles = 20;
-        solidTiles = 20;
-      }
+        score += monster.aggressionHandler.blockedTileBonus(solidTiles);
+        score += monster.aggressionHandler.freeTileBonus(solidTiles);
 
-      score += monster.aggressionHandler.blockedTileBonus(solidTiles);
-      score += monster.aggressionHandler.freeTileBonus(solidTiles);
+        // add bonus for this player type
+        score += monster.aggressionHandler.objectBonus(p._2);
 
-      // add bonus for this player type
-      score += monster.aggressionHandler.objectBonus(p._2);
+        // add bonuses for targets and attackers
+        if (currentTarget != null && (currentTarget == p._2.id)) {
+          score += monster.aggressionHandler.currentTargetBonus;
+        }
+        if (group.groupTarget != null && (group.groupTarget == p._2.id)) {
+          score += monster.aggressionHandler.groupTargetBonus;
+        }
+        if (monster.lastAttacker != null && (monster.lastAttacker == p._2.id)) {
+          score += monster.aggressionHandler.latestAttackerBonus;
+        }
 
-      // add bonuses for targets and attackers
-      if (currentTarget != null && (currentTarget == p._2.id)) {
-        score += monster.aggressionHandler.currentTargetBonus;
-      }
-      if (group.groupTarget != null && (group.groupTarget == p._2.id)) {
-        score += monster.aggressionHandler.groupTargetBonus;
-      }
-      if (monster.lastAttacker != null && (monster.lastAttacker == p._2.id)) {
-        score += monster.aggressionHandler.latestAttackerBonus;
-      }
-
-      // is this the new top target? 
-      if (score > monster.aggressionHandler.aggroLimit && (target == null || score > target.score)) {
-        target = new TargetEvaluation(p._2, range, solidTiles, freeTiles, score);
+        // is this the new top target? 
+        if (score > monster.aggressionHandler.aggroLimit && (target == null || score > target.score)) {
+          target = new TargetEvaluation(p._2, range, solidTiles, freeTiles, score);
+        }
       }
     })
     return target;
   }
 
-  def getPlayers(context: GameStateUpdateContext): HashMap[MapPosition, GameObject] = {
+  def getPlayers(context: GameStateUpdateContext): Map[MapPosition, GameObject] = {
     val players = HashMap[MapPosition, GameObject]()
     context.state.getObjects(GameObjectMetadata.Player).foreach(o => {
       players += (context.state.getObjectPosition(o.id) -> o)

@@ -2,9 +2,9 @@ package se.faerie.sleep.map.pathfinding.astar
 
 import org.junit.Test
 import org.junit.Assert
-import se.faerie.sleep.common.pathfinding.astar._
+import se.faerie.sleep.common.pathfinding.astar.AStarManhattanHeuristic
+import se.faerie.sleep.common.pathfinding.astar.AStarPathFinder
 import se.faerie.sleep.common.MapPosition
-import se.faerie.sleep.common.pathfinding.NoPathAvailableException
 
 class AStarPathFinderTest {
 
@@ -20,7 +20,7 @@ class AStarPathFinderTest {
     }
 
     def insideArea = (x: Int, y: Int) => x > 0 && y > 0 && x < mapSize && y < mapSize;
-    def blockFunction = (x: Int, y: Int) => (!insideArea(x, y) || (mapArray(x)(y)));
+    def blockFunction = (x: Int, y: Int) => if (!insideArea(x, y) || (mapArray(x)(y))) -1.0 else 1.0;
 
     val start = new MapPosition(5, 5)
     val end = new MapPosition(5, 8)
@@ -39,7 +39,7 @@ class AStarPathFinderTest {
     }
 
     def insideArea = (x: Int, y: Int) => x > 0 && y > 0 && x < mapSize && y < mapSize;
-    def blockFunction = (x: Int, y: Int) => (!insideArea(x, y) || (mapArray(x)(y)));
+    def blockFunction = (x: Int, y: Int) => if (!insideArea(x, y) || (mapArray(x)(y))) -1.0 else 1.0;
 
     val start = new MapPosition(2, 2)
     val end = new MapPosition(7, 7)
@@ -58,7 +58,7 @@ class AStarPathFinderTest {
     }
 
     def insideArea = (x: Int, y: Int) => x > 0 && y > 0 && x < mapSize && y < mapSize;
-    def blockFunction = (x: Int, y: Int) => (!insideArea(x, y) || (mapArray(x)(y)));
+    def blockFunction = (x: Int, y: Int) => if (!insideArea(x, y) || (mapArray(x)(y))) -1.0 else 1.0;
     val start = new MapPosition(5, 5)
     mapArray(5)(5) = true
     val end = new MapPosition(5, 8)
@@ -77,7 +77,7 @@ class AStarPathFinderTest {
     }
 
     def insideArea = (x: Int, y: Int) => x > 0 && y > 0 && x < mapSize && y < mapSize;
-    def blockFunction = (x: Int, y: Int) => (!insideArea(x, y) || (mapArray(x)(y)));
+    def blockFunction = (x: Int, y: Int) => if (!insideArea(x, y) || (mapArray(x)(y))) -1.0 else 1.0;
     val start = new MapPosition(5, 5)
     val end = new MapPosition(5, 8)
     mapArray(5)(8) = true
@@ -128,7 +128,7 @@ class AStarPathFinderTest {
     mapArray(4)(9) = true
 
     def insideArea = (x: Int, y: Int) => x > 0 && y > 0 && x < mapSize && y < mapSize;
-    def blockFunction = (x: Int, y: Int) => (!insideArea(x, y) || (mapArray(x)(y)));
+    def blockFunction = (x: Int, y: Int) => if (!insideArea(x, y) || (mapArray(x)(y))) -1.0 else 1.0;
 
     val start = new MapPosition(5, 5)
     val end = new MapPosition(5, 8)

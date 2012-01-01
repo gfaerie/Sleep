@@ -3,6 +3,7 @@ import se.faerie.sleep.server.state.GameObject
 
 trait AggressionHandler {
   val aggroLimit : Double;
+  val maxPursuitTime : Long;
   val maxRange : Double;
   val currentTargetBonus : Double;
   val groupTargetBonus : Double;
