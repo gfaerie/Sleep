@@ -102,10 +102,9 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
   }
 
   def noTarget(context: GameStateUpdateContext, idle: AIControlledGameObject) {
-    // if group has no patrol target set one
-    // TODO: Add regular updates of group patrol target
-    if (idle.group.rallyPoint == null) {
-
+    // if group has no patrol target or the patrol target is old set one
+    if (idle.group.rallyPoint == null || idle.group.nextUpdate < context.updateTime) {
+    	// TODO select next patrol point and set next update point will require access to context
     }
     // group has target and we are far from it, go there
     else if (context.state.getObjectPosition(idle.id).distanceTo(idle.group.rallyPoint) > idle.aggressionHandler.patrolLimit) {
