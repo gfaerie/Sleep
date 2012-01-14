@@ -14,6 +14,8 @@ import se.faerie.sleep.common.pathfinding.PathFinder
 
 /**
  *
+ * Simply updates the ai controlled objects
+ *
  * Goals:
  *
  * 1) Get prototype working with melee
@@ -22,7 +24,7 @@ import se.faerie.sleep.common.pathfinding.PathFinder
  * 4) Add ranged combat and other skills
  *
  */
-class AIController(val updateInterval: Long, actionFactory: AIActionFactory) extends GameStateUpdater with GraphicsHelper {
+class AIUpdater(val updateInterval: Long, actionFactory: AIActionFactory) extends GameStateUpdater with GraphicsHelper {
 
   class TargetEvaluation(val target: GameObject, val range: Double, val blockedTiles: Int, val freeTiles: Int, val score: Double)
 
@@ -69,11 +71,11 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
           noTarget(context, m);
         }
       }
-
       case p: Pursuing => {
         val targetEval = evaluateTargets(context, players, m, group, p.target);
         // aggro lost
-        if (targetEval == null) {
+           // remove group target if it no longer exists
+        if (!context.state.objectExists(p.target) || (targetEval == null)) {
           noTarget(context, m);
         }
         // declare new attack if new target or target is in view or we have stopped
@@ -102,15 +104,11 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
   }
 
   def noTarget(context: GameStateUpdateContext, idle: AIControlledGameObject) {
-    // if group has no patrol target or the patrol target is old set one
-    if (idle.group.rallyPoint == null || idle.group.nextUpdate < context.updateTime) {
-    	// TODO select next patrol point and set next update point will require access to context
-    }
+    // TODO select next patrol point and set next update point will require access to context
     // group has target and we are far from it, go there
-    else if (context.state.getObjectPosition(idle.id).distanceTo(idle.group.rallyPoint) > idle.aggressionHandler.patrolLimit) {
+    if (context.state.getObjectPosition(idle.id).distanceTo(idle.group.rallyPoint) > idle.aggressionHandler.patrolLimit) {
       context.addUpdater(actionFactory.createPatrolAction(idle, idle.group))
     }
-
   }
 
   def attackTarget(context: GameStateUpdateContext, attacker: AIControlledGameObject, targetEval: TargetEvaluation) {
@@ -120,7 +118,7 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
       context.addUpdater(actionFactory.createMeleeAction(attacker, targetEval.target.id, -1));
     } // else pursue
     else {
-      attacker.state = Pursuing(targetEval.target.id, System.nanoTime())
+      attacker.state = Pursuing(targetEval.target.id, System.nanoTime(), true)
       context.addUpdater(actionFactory.createPursuitAction(attacker, context.state.getObjectPosition(targetEval.target.id), -1));
     }
 
@@ -135,41 +133,28 @@ class AIController(val updateInterval: Long, actionFactory: AIActionFactory) ext
     val currentPosition = context.state.getObjectPosition(monster.id);
     players.foreach(p => {
       val range = currentPosition.distanceTo(p._1);
-      var score = 0.0;
-      var freeTiles = 0;
-      var solidTiles = 0;
+      val isCurrentTarget = currentTarget != null && (currentTarget == p._2.id);
+      val isGroupTarget = group.groupTarget != null && (group.groupTarget == p._2.id)
+      val isLastAttacker = monster.lastAttacker != null && (monster.lastAttacker == p._2.id)
+
       // should we check at all?
       if (range < monster.aggressionHandler.maxRange ||
-        (currentTarget != null && (currentTarget == p._2.id)) ||
-        (group.groupTarget != null && (group.groupTarget == p._2.id)) ||
-        (monster.lastAttacker != null && (monster.lastAttacker == p._2.id))) {
+        isCurrentTarget ||
+        isGroupTarget ||
+        isLastAttacker) {
+        
         // get distance and calc blocked and free tiles. NOTE: this is most likely the performance bottleneck but i really like to avoid radius only triggers
-        buildLine(currentPosition.x, currentPosition.y, p._1.x, p._1.y).foreach(t => {
-          if (context.state.getBackground(t.x, t.y).solid) {
-            solidTiles += 1;
-          }
-          else {
-            freeTiles += 1;
-          }
-        });
-
-        // add distance 'bonus' (usually negative)
-        score += monster.aggressionHandler.tileBonus(freeTiles, solidTiles);
-
-        // add bonus for this player type
-        score += monster.aggressionHandler.objectBonus(p._2);
-
-        // add bonuses for targets and attackers
-        if (currentTarget != null && (currentTarget == p._2.id)) {
-          score += monster.aggressionHandler.currentTargetBonus;
-        }
-        if (group.groupTarget != null && (group.groupTarget == p._2.id)) {
-          score += monster.aggressionHandler.groupTargetBonus;
-        }
-        if (monster.lastAttacker != null && (monster.lastAttacker == p._2.id)) {
-          score += monster.aggressionHandler.latestAttackerBonus;
+        val (freeTiles, solidTiles) = {
+          val solidsAndFress = buildLine(currentPosition.x, currentPosition.y, p._1.x, p._1.y).partition(t => context.state.getBackground(t.x, t.y).solid);
+          (solidsAndFress._2.size, solidsAndFress._1.size)
         }
 
+        val score = monster.aggressionHandler.tileBonus(freeTiles, solidTiles)
+        +(if (isCurrentTarget) monster.aggressionHandler.currentTargetBonus else 0)
+        +(if (isGroupTarget) monster.aggressionHandler.groupTargetBonus else 0)
+        +(if (isLastAttacker) monster.aggressionHandler.latestAttackerBonus else 0)
+        +monster.aggressionHandler.objectBonus(p._2)
+        
         // is this the new top target? 
         if (score > monster.aggressionHandler.aggroLimit && (target == null || score > target.score)) {
           target = new TargetEvaluation(p._2, range, solidTiles, freeTiles, score);

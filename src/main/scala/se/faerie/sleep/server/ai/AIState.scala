@@ -7,6 +7,6 @@ sealed trait AIState{
 
 object AIState {
   case class Attacking(val target : Long) extends AIState
-  case class Pursuing(val target : Long, val pursuitStarted : Long) extends AIState
+  case class Pursuing(val target : Long, val pursuitStarted : Long, val abortable : Boolean) extends AIState
   case class Patrolling() extends AIState 
 }
