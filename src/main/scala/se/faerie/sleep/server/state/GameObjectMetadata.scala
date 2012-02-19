@@ -4,8 +4,6 @@ trait GameObjectMetadata {
 }
 
 object GameObjectMetadata {
-    case object Player extends GameObjectMetadata
     case object Solid extends GameObjectMetadata
     case object Ghost extends GameObjectMetadata
-    case object AIControlled extends GameObjectMetadata
 }

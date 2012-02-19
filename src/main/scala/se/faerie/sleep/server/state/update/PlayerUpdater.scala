@@ -8,11 +8,12 @@ import akka.actor.ActorRef
 import se.faerie.sleep.server.state.update._
 import se.faerie.sleep.server.state.GameObjectMetadata
 import se.faerie.sleep.common.ViewModes
+import se.faerie.sleep.server.player.PlayerMetadata
 
 class PlayerUpdater(radius: Int, controller: ActorRef) extends GameStateUpdater {
 
   def update(context: GameStateUpdateContext) = {
-    context.state.getObjects(GameObjectMetadata.Player).foreach(player =>
+    context.state.getObjects(PlayerMetadata.getClass()).foreach(player =>
       {
         val time = System.nanoTime();
         val position = context.state.getObjectPosition(player.id)

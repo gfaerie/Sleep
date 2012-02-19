@@ -9,5 +9,6 @@ trait GameStateUpdateContext {
 	def addLog(log : String);
 	def updateTime : Long;
 	def lastUpdateTime : Long;
+	def startTime : Long;
 
 }

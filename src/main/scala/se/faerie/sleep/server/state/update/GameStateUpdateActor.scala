@@ -14,9 +14,11 @@ class GameStateUpdateActor extends Actor with GameStateUpdateContext {
   private var gameState: GameState = null
   var updateTime: Long = 0;
   var lastUpdateTime : Long =0;
-
+  var startTime : Long =0;
+  
   def receive = {
     case s: GameStateData => {
+      startTime=System.nanoTime
       gameState = s.state
       updaters = List.empty
       updatersToRemove.clear

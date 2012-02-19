@@ -13,6 +13,7 @@ import scala.math._
 import se.faerie.sleep.common.GameBackground
 import se.faerie.sleep.server.state.collision.CollisionHandler
 import se.faerie.sleep.common.GameBackground._
+import se.faerie.sleep.server.state.update.helper.SingleUpdate
 
 class BlackHoleAction extends PlayerAction with MovementHelper {
   val holeGraphics = new TileGraphics('*', 50.asInstanceOf[Byte], 50.asInstanceOf[Byte], 50.asInstanceOf[Byte])
@@ -25,8 +26,8 @@ class BlackHoleAction extends PlayerAction with MovementHelper {
     def onCollision(owner: GameObject, target: GameObject, context: GameStateUpdateContext) { owner.hp = -1 }
   }
 
-  class HoleCreator(ownerId: Long, angle: Double) extends GameStateUpdater {
-    def update(context: GameStateUpdateContext) = {
+  class HoleCreator(ownerId: Long, angle: Double) extends SingleUpdate {
+    def doUpdate(context: GameStateUpdateContext) = {
       for (i <- -1 to 1) {
         val owner = context.state.getObject(ownerId)
         val ownerPos = context.state.getObjectPosition(ownerId)
@@ -36,10 +37,8 @@ class BlackHoleAction extends PlayerAction with MovementHelper {
         hole.movement = getLineMovement(angle+i*Pi/12, ownerPos, 20)
         hole.collisionHandler = holeCollisionHandler
         context.state.addObject(ownerPos, hole)
-        context.removeUpdater(this)
       }
     }
-    priority = 5;
   }
 
   val id: Long = 2

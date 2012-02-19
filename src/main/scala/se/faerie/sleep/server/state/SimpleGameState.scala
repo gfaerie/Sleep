@@ -19,7 +19,7 @@ class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gri
   private val widthGrid: Int = ceil(width.asInstanceOf[Double] / gridSize.asInstanceOf[Double]).toInt
   private val heightGrid: Int = ceil(height.asInstanceOf[Double] / gridSize.asInstanceOf[Double]).toInt
   private val gridMaps = Array.ofDim[MultiMap[MapPosition, GameObject]](widthGrid, heightGrid);
-  private val metadataIndex = new HashMap[GameObjectMetadata, collection.mutable.Set[GameObject]] with MultiMap[GameObjectMetadata, GameObject];
+  private val metadataIndex = new HashMap[Class[_], collection.mutable.Set[GameObject]] with MultiMap[Class[_], GameObject];
 
   def getAllObjects(): Traversable[GameObject] = objectMap.values
 
@@ -28,7 +28,7 @@ class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gri
       throw new InvalidGameStateException("Position " + position + " is outside map")
     }
     for (metadata <- source.staticMetadata) {
-      metadataIndex.addBinding(metadata, source)
+      metadataIndex.addBinding(metadata.getClass, source)
     }
     addGridMapping(position, source)
     sourceMap += (source.id -> position);
@@ -53,7 +53,7 @@ class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gri
     val position = sourceMap(objectId);
     val gameObject = objectMap(objectId);
     for (metadata <- gameObject.staticMetadata) {
-      metadataIndex.removeBinding(metadata, gameObject)
+      metadataIndex.removeBinding(metadata.getClass, gameObject)
     }
     removeGridMapping(position, gameObject);
     sourceMap -= objectId;
@@ -83,7 +83,7 @@ class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gri
 
   def insideGame(x: Int, y: Int): Boolean = return x >= 0 && y >= 0 && x < width && y < height;
 
-  def getObjects(metadata: GameObjectMetadata): Traversable[GameObject] = metadataIndex.get(metadata) match {
+  def getObjects(metadata: Class[_]): Traversable[GameObject] = metadataIndex.get(metadata) match {
     case Some(o) => return o;
     case None => return Set.empty
   }

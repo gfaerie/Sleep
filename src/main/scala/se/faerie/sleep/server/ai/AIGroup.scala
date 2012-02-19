@@ -4,5 +4,5 @@ import se.faerie.sleep.common.MapPosition
 class AIGroup(val id : Long) {
     var groupTarget: java.lang.Long = null;
     var rallyPoint : MapPosition = null;
-    var nextUpdate : Long = Long.MinValue;
+    var lastUpdated : Long = Long.MinValue;
 }

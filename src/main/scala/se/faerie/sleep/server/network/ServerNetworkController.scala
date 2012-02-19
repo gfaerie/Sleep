@@ -13,8 +13,9 @@ import se.faerie.sleep.common.network.LimitedMessageReliability
 import se.faerie.sleep.server.player._
 import se.faerie.sleep.server.ServerCommands._
 import se.faerie.sleep.server.state.GameStateFactory
+import se.faerie.sleep.server.state.PositionHelper
 
-abstract class ServerNetworkController(game: ActorRef, sender: ActorRef, playerFactory: PlayerFactory, playerActionFactory: PlayerActionFactory, gameStateFactory: GameStateFactory) extends Actor with NetworkProtocol {
+abstract class ServerNetworkController(game: ActorRef, sender: ActorRef, playerFactory: PlayerFactory, playerActionFactory: PlayerActionFactory, gameStateFactory: GameStateFactory) extends Actor with NetworkProtocol with PositionHelper {
 
   private class ClientInfo(val address: SocketAddress, val name: String)
 
@@ -33,16 +34,7 @@ abstract class ServerNetworkController(game: ActorRef, sender: ActorRef, playerF
 
   private class AddClient(player: GameObject) extends SingleUpdate {
     def doUpdate(context: GameStateUpdateContext) {
-      val random = new Random()
-      // add at random position
-      while (true) {
-        val x = random.nextInt(context.state.width);
-        val y = random.nextInt(context.state.height);
-        if (context.state.getBackground(x, y).passable) {
-          context.state.addObject(new MapPosition(x, y), player);
-          return ;
-        }
-      }
+          context.state.addObject(randomFreePosition(context), player);
     };
     override def toString = "Player add for client " + player.id;
     priority=1000;
