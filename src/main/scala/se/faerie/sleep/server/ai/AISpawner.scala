@@ -1,14 +1,10 @@
 package se.faerie.sleep.server.ai
-import se.faerie.sleep.server.ai.AIMonsterFactory
 import se.faerie.sleep.server.player.PlayerMetadata
+import se.faerie.sleep.server.state.update.helper.DelayedUpdate
 import se.faerie.sleep.server.state.update.helper.PeriodicUpdate
 import se.faerie.sleep.server.state.update.GameStateUpdateContext
-import se.faerie.sleep.server.state.PositionHelper
-import se.faerie.sleep.server.state.update.helper.SingleUpdate
-import se.faerie.sleep.common.MapPosition
 import se.faerie.sleep.server.state.GameObject
-import se.faerie.sleep.server.state.update.helper.DelayedUpdate
-import se.faerie.sleep.server.ai.AIControlMetadata
+import se.faerie.sleep.server.state.PositionHelper
 
 
 /**

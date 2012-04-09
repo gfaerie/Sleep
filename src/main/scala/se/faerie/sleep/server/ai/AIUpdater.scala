@@ -8,9 +8,6 @@ import se.faerie.sleep.common.MapPosition
 import se.faerie.sleep.server.ai.AIState.Attacking
 import se.faerie.sleep.server.ai.AIState.Patrolling
 import se.faerie.sleep.server.ai.AIState.Pursuing
-import se.faerie.sleep.server.ai.AIActionFactory
-import se.faerie.sleep.server.ai.AIControlMetadata
-import se.faerie.sleep.server.ai.AIGroup
 import se.faerie.sleep.server.player.PlayerMetadata
 import se.faerie.sleep.server.state.update.GameStateUpdateContext
 import se.faerie.sleep.server.state.update.GameStateUpdater
@@ -46,6 +43,9 @@ class AIUpdater(val updateInterval: Long, actionFactory: AIActionFactory) extend
               handleObject(context, players, o, metadata);
             }
           }
+        }
+        case None => {
+          // should never happen...log?
         }
       }
     });
@@ -130,7 +130,7 @@ class AIUpdater(val updateInterval: Long, actionFactory: AIActionFactory) extend
     // TODO select next patrol point and set next update point will require access to context
     // group has target and we are far from it, go there
     if (context.state.getObjectPosition(idle.id).distanceTo(metadata.group.rallyPoint) > metadata.aggressionHandler.patrolLimit) {
-      context.addUpdater(actionFactory.createPatrolAction(idle, metadata.group))
+      context.addUpdater(actionFactory.createMovementAction(idle, metadata.group.rallyPoint))
     }
   }
 
@@ -138,11 +138,11 @@ class AIUpdater(val updateInterval: Long, actionFactory: AIActionFactory) extend
     // can we see the target?
     if (targetEval.blockedTiles == 0) {
       metadata.state = Attacking(targetEval.target.id)
-      context.addUpdater(actionFactory.createMeleeAction(attacker, targetEval.target.id, -1));
+      context.addUpdater(actionFactory.createMeleeAction(attacker, targetEval.target.id));
     } // else pursue
     else {
       metadata.state = Pursuing(targetEval.target.id, System.nanoTime(), true)
-      context.addUpdater(actionFactory.createPursuitAction(attacker, context.state.getObjectPosition(targetEval.target.id), -1));
+      context.addUpdater(actionFactory.createMovementAction(attacker, context.state.getObjectPosition(targetEval.target.id)));
     }
 
     // alert the rest of the group that we got a new target
