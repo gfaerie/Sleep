@@ -16,8 +16,10 @@ trait PositionHelper {
     else {
       return randomFreePosition(context);
     }
-
   }
+  
+  
+  def randomPosition(context: GameStateUpdateContext) = new MapPosition(random.nextInt(context.state.width), random.nextInt(context.state.height));
 
   def isPositionFree(context: GameStateUpdateContext, position: MapPosition) = {
     context.state.getBackground(position.x, position.y).passable && context.state.getObjectsAtPosition(position) == null;

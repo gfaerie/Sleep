@@ -68,7 +68,7 @@ class AIUpdater(val updateInterval: Long, actionFactory: AIActionFactory) extend
       metadata.lastAttacker = null;
     }
 
-    if (group.lastUpdated + updateInterval < context.updateTime) {
+    if ((group.lastUpdated + updateInterval) < context.updateTime) {
       updateGroupRallyPoint(context, players, group);
     }
 

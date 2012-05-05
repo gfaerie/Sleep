@@ -17,7 +17,10 @@ class AISpawner(difficulty: Int, updateInterval: Long, monsterFactory: AIMonster
  class MonsterAdder(delay : Long, monster : GameObject) extends DelayedUpdate(delay) {
     def doUpdate(context: GameStateUpdateContext) = {
       val position = spawnPosition(context)
-      context.state.addObject(position,monster)
+      // for now just ignore if we got a closed position
+      if(isPositionFree(context,position)){
+    	  context.state.addObject(position,monster)
+      }
     }
   }
   
@@ -38,6 +41,6 @@ class AISpawner(difficulty: Int, updateInterval: Long, monsterFactory: AIMonster
     group.foreach(m => context.addUpdater(new MonsterAdder(context.updateTime+(m.id%10)*100000000, m)));
   }
 
-  def spawnPosition(context: GameStateUpdateContext) = randomFreePosition(context);
+  def spawnPosition(context: GameStateUpdateContext) = randomPosition(context);
 
 }
