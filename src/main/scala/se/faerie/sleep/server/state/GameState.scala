@@ -9,7 +9,7 @@ trait GameState {
 	def id : Long
 	def getObjects(xStart: Int, yStart: Int, xEnd : Int, yEnd: Int): MultiMap[MapPosition, GameObject]
 	def getAllObjects(): Traversable[GameObject]
-	def getObjects(metadata : Class[_]): Traversable[GameObject]
+	def getObjects[T <: AddionalGameObjectData](metadata : Class[T]): Traversable[GameObject with T]
 	def removeObject(objectId: Long)
 	def objectExists(objectId: Long): Boolean;
 	def moveObject(objectId: Long,position: MapPosition)

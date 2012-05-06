@@ -11,13 +11,13 @@ import se.faerie.sleep.server.state.move.PathMovement
 
 class SimpleAIActionFactory(val pathFinder: PathFinder) extends AIActionFactory {
 
-  def createMeleeAction(attacker: GameObject, target: Long): GameStateUpdater = new SingleUpdate() {
+  def createMeleeAction(attacker: GameObject with AIControlMetadata, target: Long): GameStateUpdater = new SingleUpdate() {
     def doUpdate(context: GameStateUpdateContext) {
     	attacker.movement=new HomingMovement(target,0,20);
     }
   }
 
-  def createMovementAction(pursuer: GameObject, targetPosition: MapPosition): GameStateUpdater = new SingleUpdate() {
+  def createMovementAction(pursuer: GameObject with AIControlMetadata, targetPosition: MapPosition): GameStateUpdater = new SingleUpdate() {
     def doUpdate(context: GameStateUpdateContext) {
     val start = context.state.getObjectPosition(pursuer.id)
     val costFunction: (Int, Int) => (Double) = (x, y) => if(pursuer.collisionHandler.isCollision(pursuer, context.state.getBackground(x, y), context)) -1 else 1;

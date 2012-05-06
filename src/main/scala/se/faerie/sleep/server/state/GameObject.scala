@@ -11,13 +11,12 @@ object GameObject{
 	val emptySet : Set[GameObjectMetadata] = Set();
 }
 
-class GameObject(val staticMetadata : Set[GameObjectMetadata]=GameObject.emptySet, val id : Long = GameObject.idCounter.incrementAndGet){
-	def this() = this(Set.empty,GameObject.idCounter.incrementAndGet)
+class GameObject (val id : Long = GameObject.idCounter.incrementAndGet){
 	var origin : Long = id;
 	var layer : Byte = 0;
 	var team : Byte = 0;
 	var hp : Float = 0;
-	var dynamicMetadata : Set[GameObjectMetadata] = Set.empty;
+	var dynamicMetadata : Map[Class[_ <: GameObjectMetadata] ,GameObjectMetadata] = Map.empty;
 	var lightSource : (GameStateUpdateContext) => (TileLightSource) = null;
 	var graphicsId: (GameStateUpdateContext) => (TileGraphics) = null;
 	var moveFraction : Float = 0.0f;

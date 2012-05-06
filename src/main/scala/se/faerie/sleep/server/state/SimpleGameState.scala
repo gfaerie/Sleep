@@ -9,7 +9,7 @@ import scala.collection.mutable.Set
 import scala.collection.mutable.MultiMap
 import scala.math._
 
-class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gridSize: Short) extends GameState {
+class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gridSize: Short, mixinsToIndex: collection.immutable.Set[Class[_ <: AddionalGameObjectData]]) extends GameState {
   val id = mapId;
   val width = backGround.length;
   val height = backGround(0).length;
@@ -19,7 +19,7 @@ class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gri
   private val widthGrid: Int = ceil(width.asInstanceOf[Double] / gridSize.asInstanceOf[Double]).toInt
   private val heightGrid: Int = ceil(height.asInstanceOf[Double] / gridSize.asInstanceOf[Double]).toInt
   private val gridMaps = Array.ofDim[MultiMap[MapPosition, GameObject]](widthGrid, heightGrid);
-  private val metadataIndex = new HashMap[Class[_], collection.mutable.Set[GameObject]] with MultiMap[Class[_], GameObject];
+  private val metadataIndex = new HashMap[Class[_ <: AddionalGameObjectData], collection.mutable.Set[GameObject]] with MultiMap[Class[_ <: AddionalGameObjectData], GameObject];
 
   def getAllObjects(): Traversable[GameObject] = objectMap.values
 
@@ -27,8 +27,11 @@ class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gri
     if (!insideGame(position.x, position.y)) {
       throw new InvalidGameStateException("Position " + position + " is outside map")
     }
-    for (metadata <- source.staticMetadata) {
-      metadataIndex.addBinding(metadata.getClass, source)
+    for (mixin <- mixinsToIndex) {
+      if (mixin.isInstance(source)) {
+        metadataIndex.addBinding(mixin, source)
+      }
+
     }
     addGridMapping(position, source)
     sourceMap += (source.id -> position);
@@ -43,17 +46,20 @@ class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gri
       addGridMapping(position, gameObject);
       sourceMap += (objectId -> position);
     }
-    else{
+    else {
       throw new InvalidGameStateException("Position " + position + " is outside map")
     }
-    
+
   };
 
   def removeObject(objectId: Long) {
     val position = sourceMap(objectId);
     val gameObject = objectMap(objectId);
-    for (metadata <- gameObject.staticMetadata) {
-      metadataIndex.removeBinding(metadata.getClass, gameObject)
+
+    for (mixin <- mixinsToIndex) {
+      if (mixin.isInstance(gameObject)) {
+        metadataIndex.removeBinding(mixin, gameObject)
+      }
     }
     removeGridMapping(position, gameObject);
     sourceMap -= objectId;
@@ -72,7 +78,8 @@ class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gri
         case None => return emptySet;
         case Some(set) => return set;
       }
-    } else {
+    }
+    else {
       return emptySet;
     }
   }
@@ -83,8 +90,8 @@ class SimpleGameState(mapId: Long, backGround: Array[Array[GameBackground]], gri
 
   def insideGame(x: Int, y: Int): Boolean = return x >= 0 && y >= 0 && x < width && y < height;
 
-  def getObjects(metadata: Class[_]): Traversable[GameObject] = metadataIndex.get(metadata) match {
-    case Some(o) => return o;
+  def getObjects[T <: AddionalGameObjectData](metadata: Class[T]): Traversable[GameObject with T] = metadataIndex.get(metadata) match {
+    case Some(o) => return o.asInstanceOf[Traversable[GameObject with T]];
     case None => return Set.empty
   }
 
