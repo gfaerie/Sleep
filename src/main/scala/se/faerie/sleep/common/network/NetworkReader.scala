@@ -16,7 +16,8 @@ class NetworkReader(datagramChannel: DatagramChannel, controller: ActorRef, maxP
     while (datagramChannel.isOpen && running) {
       try {
         val buffer = ByteBuffer.allocate(maxPacketSize)
-        val sender = datagramChannel.receive(buffer); buffer.flip
+        val sender = datagramChannel.receive(buffer) 
+        buffer.flip
         if(running){
         	controller ! new NetworkData(buffer, sender)
         }
